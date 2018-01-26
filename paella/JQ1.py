@@ -79,12 +79,12 @@ def plot_correlation(reads_, cell_line):
 #     cell_line = 'D458'
     drop = reads_.filter(regex='Sum|shared').columns
     corr = pairwise.compare(reads_.drop(drop, axis=1), pearsonr_)
-    
+    # assert False
     fig, ax = plt.subplots()
     ax = sns.heatmap(corr)
     ax.set_title('pearson correlation')
     ax.set_xlabel(''); ax.set_ylabel('')
-    
+   
     cg = sns.clustermap(corr)
     cg.ax_heatmap.set_title('%s pearson correlation' % cell_line)
     cg.ax_col_dendrogram.set_visible(False)

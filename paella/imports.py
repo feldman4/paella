@@ -9,6 +9,7 @@ import seaborn as sns
 from itertools import product, combinations
 from natsort import natsorted
 import os
+from glob import glob
 
 sns.set(style='white', font_scale=1.5)
 
@@ -20,4 +21,5 @@ IPython.get_ipython().magic('load_ext autoreload')
 IPython.get_ipython().magic('autoreload 2')
 
 from paella import pairwise
+
 from paella.analysis import *

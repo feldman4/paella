@@ -112,16 +112,16 @@ def plot_correlation_hela(df, bottleneck):
     ds = 1
 
     bottlenecks = {
-        '1e4':
-                   ['HeLa_1e4_ETP'
-                   ,'HeLa_1e4_PBS1'
-                   ,'HeLa_1e4_PBS2'
-                   ,'HeLa_1e4_PBS3'
-                   ,'HeLa_1e4_PBS4'
-                   ,'HeLa_1e4_Hygro1'
-                   ,'HeLa_1e4_Hygro2'
-                   ,'HeLa_1e4_Hygro3'
-                   ,'HeLa_1e4_Hygro4'
+        '4e4':
+                   ['HeLa_4e4_ETP'
+                   ,'HeLa_4e4_PBS1'
+                   ,'HeLa_4e4_PBS2'
+                   ,'HeLa_4e4_PBS3'
+                   ,'HeLa_4e4_PBS4'
+                   ,'HeLa_4e4_Hygro1'
+                   ,'HeLa_4e4_Hygro2'
+                   ,'HeLa_4e4_Hygro3'
+                   ,'HeLa_4e4_Hygro4'
                    ]
         ,'3.5e5': 
                ['HeLa_3.5e5_ETP'
@@ -186,63 +186,62 @@ def plot_correlation_hela(df, bottleneck):
 
     return ax
 
+def plot_correlation_cal1(df, hela_too=False):
+
+    color_top, color_mid, color_mid_shared = 10, 10, 10
+    threshold, mid_shared_threshold = 2e-5, 4
+    mid = 100
+    ds = 1
+
+    import paella.data
+    filt  = df['sample'].apply(lambda x: 'Cal-1' in x)
+
+    if hela_too:
+        filt |= df['sample'].apply(lambda x: 'HeLa' in x)
+
+    samples = sorted(set(df.loc[filt, 'sample']))
+
+    df_plot = (df[filt].pivot(index='sgRNA', columns='sample', values='fraction')
+                   .iloc[::ds]).copy()
+
+    keep_filt = ~((df_plot.isnull()).sum(axis=1) >= mid_shared_threshold)
+    keep_filt = keep_filt[keep_filt].index
+    df_plot[df_plot < threshold] = threshold
+    df_plot = df_plot.fillna(threshold / 2)
+
+    # color rank subgroups
+    ranked = df_plot.filter(regex='SL-401').max(axis=1).sort_values(ascending=False)
+    top = ranked[:color_top].index
+    mid = ranked[mid:mid+color_mid].index
+    mid_shared = ranked[ranked.index.isin(keep_filt)][100:100+color_mid_shared].index
+    categories = 'log10 > %.1f' % np.log10(threshold), 'top', 'mid', 'mid_shared'
+    palette = (0.5, 0.5, 0.5, 0.5), 'red', 'blue', 'green'
+    df_plot['category'] = categories[0]
+    df_plot.loc[top, 'category'] = categories[1]
+    df_plot.loc[mid, 'category'] = categories[2]
+    df_plot.loc[mid_shared, 'category'] = categories[3]
 
 
-# def plot_ranks(gb, ranks=100, highlight=None):
-#     """Pass in a SeriesGroupBy.
-#     """
-#     n = len(gb.size())
-#     fig, axs = plt.subplots(nrows=n, figsize=(6,n*2), sharey=True, sharex=True)
-#     names = []
-#     arr = []
-#     for ax, (name, s) in zip(axs, gb):
-#         data = list(s.iloc[:ranks])
-#         ax.plot(data)
-#         ax.set_ylabel(name)
-#         names += [name]
-#     ax.set_yscale('log')
-#     fig.tight_layout()
+    float_cols = df_plot.filter(regex='Cal-1').columns
+    df_plot_ = df_plot.copy()
 
-#     highlight = 'L11', range(20)
-#     h_name, h_ranks = highlight
+    A = (df_plot_[float_cols] <= threshold).as_matrix()
+    B = (df_plot_['category'] == categories[0]).as_matrix()[:, None]
 
-#     h_values = gb.get_group(h_name).iloc[h_ranks]
-#     h_index = h_values.index
-#     h_ax = axs[names.index(h_name)]
+    data = df_plot_[float_cols].as_matrix()
+    data[(A&B)] = np.nan
 
-#     arr_values = []
-#     arr_rank   = []
-#     for name, df in gb:
-#         col = df.name
-#         df = pd.DataFrame(df)
-#         df['rank'] = range(len(df))
-#         arr_values += [df.loc[h_index, col]]
-#         arr_rank   += [df.loc[h_index, 'rank']]
-#     df_values = pd.concat(arr_values, axis=1)
-#     df_rank   = pd.concat(arr_rank, axis=1)
-        
-#     df_values.columns = names
-#     df_rank.columns  = names
-    
+    df_plot_[float_cols] = data
+    df_plot_[(df_plot_['category'] == categories[0])]
+    df_plot_[float_cols] = np.log10(df_plot_[float_cols])
+    pg = sns.pairplot(df_plot_, hue='category', palette=palette, hue_order=categories
+                      , x_vars=samples, y_vars=samples, plot_kws={'s': 16})
 
-#     transFigure = fig.transFigure.inverted()
-#     coords = []
-#     for name, ax in zip(names, axs):
-#         data = np.array([df_rank[name], df_values[name]])
-#         coord1 = transFigure.transform(ax.transData.transform(data))
-#         coords += [coord1]
-     
-#     coords = np.array(coords)
-#     for i in range(coords.shape[1]):
-#         x,y = coords[:,i,:].T
-#         import matplotlib
-        
-#         line = matplotlib.lines.Line2D(x,y, transform=fig.transFigure)
-#         # assert False
-#         fig.lines += [line]
-#         break
-    
-#     return fig, axs, df, coords
+    lim = [-5.2, 0]
+    [(ax.set_xlim(lim), ax.set_ylim(lim)) for ax in pg.axes.flat[:]];
+    # pg.fig.savefig('test.pdf')
+
+    return ax
 
 
 sort_order = \

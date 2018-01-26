@@ -1,7 +1,26 @@
+from itertools import product
 from paella.imports import *
 
+def rc(seq):
+    return ''.join(watson_crick[x] for x in seq)[::-1]
+
+def degenerate(s):
+    """a generator would be nice
+    """
+    bases = {'N': list('ACTG')}
+    arr = []
+    for c in s:
+        arr += [bases.get(c, [c])]
+    return [''.join(x) for x in product(*arr)]
 
 
+watson_crick = {'A': 'T',
+                'T': 'A',
+                'C': 'G',
+                'G': 'C',
+                'U': 'A',
+                'N': 'N'}
+watson_crick.update({k.lower(): v.lower() for k, v in watson_crick.items()})
 
 def read_fastq(f):
     with open(f, 'r') as fh:
@@ -31,9 +50,9 @@ def read_hist(f, strip=0):
 	Read output of sort | hist -c | sort -bnr.
 	"""
 	df = pd.read_csv(f, sep='\s+', header=None)
-	df.columns='count', 'sgRNA'
+	df.columns='count', 'seq'
 	if strip:
-	    df['sgRNA'] = [s[strip:-strip] for s in df['sgRNA']]
+	    df['seq'] = [s[strip:-strip] for s in df['seq']]
 
 	return df
 
@@ -70,3 +89,21 @@ def stop_codon(sequence, n=20):
 # 	for wellA, wellB in zip(df_overlap[])
 
 
+def resample(df_, n=350000):
+    x = df_['count'].copy()
+    x /= x.sum()
+    c = Counter(np.random.choice(x.index, size=n, p=x))
+    s = pd.Series(c.values(), index=c.keys())
+    s.name = 'resampled_count'
+    df2 = pd.concat([x, s], axis=1).fillna(0).astype(int)
+    return df2['resampled_count']
+
+def well_to_row_col(df, in_place=False, col_to_int=True):
+    if not in_place:
+        df = df.copy()
+    f = lambda s: int(s) if col_to_int else s
+
+    df['row'] = [s[0] for s in df['well']]
+    df['col'] = [f(s[1:]) for s in df['well']]
+
+    return df
