@@ -46,7 +46,10 @@ def pivot_fraction_rank(df, fill_rank=None, fill_frac=None):
          df_rank = (df_rank.fillna(fill_rank)
                           .astype(int))
 
+    # maintain original sample order after pivot
+    sample_order = list(df['sample_info'].drop_duplicates())
     df2 = (df.pivot_table(values='fraction', index='seq', columns='sample_info')
+    	     [sample_order]
              .join(df_rank, rsuffix='_rank', lsuffix='_frac')
              .assign(min_rank=min_rank))
     
