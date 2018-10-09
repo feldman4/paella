@@ -6,6 +6,41 @@ from itertools import combinations_with_replacement, permutations, product
 from collections import defaultdict
 from functools import partial
 
+
+def compare_columns(df, func, symmetric=True):
+    import pandas as pd
+
+    if symmetric:
+        cols = combinations_with_replacement(df.columns, 2)
+    else:
+        cols = product(df.columns, df.columns)
+
+    df2 = pd.DataFrame([[c1, c2, func(df[c1],df[c2])] for c1,c2 in cols])
+    name = df.columns.name
+    compare_name = func.__name__
+    if name:
+        df2.columns = name + '_A', name + '_B', compare_name
+    
+    if symmetric:
+        a,b,c = df2.columns
+        dummy = df2[[b,a,c]]
+        dummy.columns = a,b,c
+        df2 = pd.concat([df2, dummy])[df2.columns]
+        return df2.drop_duplicates()
+    return df2
+     
+def compare(df, func=None, symmetric=True, pivot=True):
+    """return heatmap looking thing
+    """
+    if func is None:
+        func = jaccard_series
+        
+    df2 = compare_columns(df, func, symmetric=symmetric)
+    if pivot:
+        index, col, val = df2.columns
+        return df2.pivot(index=index,columns=col,values=val)
+    return df2
+
 def in_common_series(a, b):
     """ Assumes inputs are numpy/pandas vectors of counts.
     Counts in a from items that are nonzero in b.
@@ -43,34 +78,7 @@ def pearsonr(a,b):
     import scipy.stats
     return scipy.stats.pearsonr(a,b)[0]
 
-def compare_columns(df, func, symmetric=True):
-    import pandas as pd
-
-    if symmetric:
-        cols = combinations_with_replacement(df.columns, 2)
-    else:
-        cols = product(df.columns, df.columns)
-
-    df2 = pd.DataFrame([[c1, c2, func(df[c1],df[c2])] for c1,c2 in cols])
-    name = df.columns.name
-    compare_name = func.__name__
-    if name:
-        df2.columns = name + '_A', name + '_B', compare_name
-    
-    if symmetric:
-        a,b,c = df2.columns
-        dummy = df2[[b,a,c]]
-        dummy.columns = a,b,c
-        df2 = pd.concat([df2, dummy])[df2.columns]
-        return df2.drop_duplicates()
-    return df2
-     
-def compare(df, func=jaccard_series, symmetric=True, pivot=True):
-    df2 = compare_columns(df, func, symmetric=symmetric)
-    if pivot:
-        index, col, val = df2.columns
-        return df2.pivot(index=index,columns=col,values=val)
-    return df2
+### EDIT DISTANCE
 
 def sparse_edit_distance(sequences):
     """Returns sparse binary matrix of sequence pairs with an edit distance of 1.
