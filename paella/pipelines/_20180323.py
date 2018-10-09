@@ -30,129 +30,32 @@ try:
 except AttributeError:
     paella.gates = gates
 
-def get_info(filename):
-    pat = '(\d\d)-Tube-(.)(\d+).fcs'
-    plate, row, col = re.findall(pat, filename)[0]
-    return {'plate': int(plate), 'well': '%s%02d' % (row, int(col)), 
-            'row': row, 'col': int(col)}
+## specific to pipeline
 
-def load_file(filename, n):
-    df = (FlowCytometryTools.FCMeasurement('', datafile=filename)
-          .data
-          [:n]
-          .rename(columns=normalize_column)
-          [FCS_COLS]
-          .pipe(log_transform)
-          .assign(file=filename)
-          .assign(**get_info(filename))
-         )
-    
-    return df
+def rename_variables_for_plot(df):
+	sgRNA_names = {'sg20N_304': 'guide 1',
+	                'sg20N_305': 'guide X',
+	                'sg20N_307': 'guide 2',
+	                'sg20N_308': 'guide 3',
+	                'sg20N_316': 'guide 4',
+	                'sg20N_318': 'guide 5',
+	                'sg20N_319': 'guide 6',
+	              }
 
-def log_transform(x):
-    return np.log10(1 + np.abs(x))
+	target_names = {'T304': 'target 1', 
+					'T305': 'target X', 
+					'T307': 'target 2', 
+					'T308': 'target 3', 
+					'T316': 'target 4', 
+					'T318': 'target 5',
+					'T319': 'target 6',
+					'MT0': 'Multi-target 1', 
+					'MT1': 'Multi-target 2'}
 
-def normalize_column(col):
-    return col.replace('-', '_')
-
-def fix_row(df):
-    """ duplicate row on plate1, Exp_20180322_1
-    """
-    filt = df['row'] == 'H'
-    df.loc[filt, 'row'] = 'G'
-    return df
-
-def apply_uni_rows(df):
-    
-    def uni_it(xs):
-        return [unichr(60000 + i) + x for i,x in enumerate(xs)]
-
-    rows = sorted(set(df['row']))[::-1]
-    uni_map = OrderedDict(zip(rows, uni_it(rows)))
-    df['row_uni'] = df['row'].apply(lambda x: uni_map[x])
-    
-    return df
-
-def to_grid_space(df, kdims_inner, kdims_outer, element=hv.Points):
-
-    gb = df.groupby(kdims_outer)
-    x = [(k, element(v, kdims=kdims_inner)) for k,v in gb]   
-
-    # GridSpace bug https://github.com/ioam/holoviews/issues/1787
-    grid = hv.GridSpace(x, kdims=kdims_outer)
-
-    return grid
-
-def make_gate_callback(df, gate_name='gate', kdims=(FSC_A, SSC_A)):
-    kdims = list(kdims)
-
-    def callback(data):
-        poly = data
-        
-        # debug
-        hv.poly = poly
-        
-        try:   
-            for i, (xs, ys) in enumerate(zip(poly['x'], poly['y'])):
-          
-                points = np.array(zip(xs, ys))
-
-                p = path.Path(points)
-                mask = p.contains_points(df[kdims])
-                
-                df[gate_name] = mask 
-                df[gate_name] = df[gate_name].astype(bool)
-
-                # stash in global dict
-                gate = gates_from_poly(poly, kdims)
-                try:                
-                    paella.gates[gate_name] = gate
-                except KeyError:
-                    paella.gates = {gate_name: gate}
-                break
-
-        except Exception as e:
-            hv.error = e
-            
-        return hv.Points(df, kdims=kdims)
-
-    return callback
-
-def mx_plus_b(x0, x1, y0, y1):
-    m = (y1 - y0) / (x1 - x0)
-    b = y0 - m * x0
-    return m, b
-
-def make_gate(x0, x1, m, b, kdims):
-    comp = '>' if x1 > x0 else '<'
-    
-    gate = \
-    ('y | m*x + b'
-     .replace('m', str(m))
-     .replace('b', str(b))
-     .replace('x', kdims[0])
-     .replace('y', kdims[1])
-     .replace('|', comp)
-    )
-    return '(' + gate + ')'
-
-def gates_from_poly(poly, kdims):
-    xs = poly['x'][0]
-    ys = poly['y'][0]
-    return gates_from_xy(xs, ys, kdims)
-
-def gates_from_xy(xs, ys, kdims):
-    n = len(xs)
-    gates = []
-    for i in range(n):
-        x0, x1 = xs[i], xs[(i + 1) % n]
-        y0, y1 = ys[i], ys[(i + 1) % n]        
-        m, b = mx_plus_b(x0, x1, y0, y1)
-        gate = make_gate(x0, x1, m, b, kdims)
-        gates += [gate]
-        
-    final_gate = ' & '.join(gates)
-    return final_gate
+	return (df
+		 .assign(sgRNA=lambda x: x['sgRNA'].apply(sgRNA_names.get))      
+		 .assign(target=lambda x: x['target'].apply(target_names.get))
+		)
 
 def plot_plate_summary(df, col_name, aggfunc='log_sum', **heatmap_kwargs):
     name = 'value'
@@ -185,53 +88,34 @@ def plot_plate_summary(df, col_name, aggfunc='log_sum', **heatmap_kwargs):
         
     return fig
 
-def extract_polygon_gates(xml_file):
-    with open(xml_file, 'r') as fh:
-        xml = fh.read()
-    soup = BeautifulSoup(xml, 'xml')
-    gates = soup.find_all('PolygonGate')
-    
-    return gates
-    
-def tag_to_coords(gate_tag):
-    arr = []
-    for vertex in gate_tag.find_all('vertex'):
-        x, y = vertex.find_all('coordinate')
-        x = float(x['data-type:value'])
-        y = float(y['data-type:value'])
-        arr += [(x, y)]
+def get_info(filename):
+    pat = '(\d\d)-Tube-(.)(\d+).fcs'
+    plate, row, col = re.findall(pat, filename)[0]
+    return {'plate': int(plate), 'well': '%s%02d' % (row, int(col)), 
+            'row': row, 'col': int(col)}
 
-    x, y = gate_tag.find_all('fcs-dimension')
-    x = x['data-type:name']
-    y = y['data-type:name']
-    kdims = [x, y]
-    return arr, kdims
-
-def coords_to_gate(xy, kdims):
-    xs, ys = zip(*xy)
-    kdims = map(normalize_column, kdims)
+def load_file(filename, n):
+    df = (FlowCytometryTools.FCMeasurement('', datafile=filename)
+          .data
+          [:n]
+          .rename(columns=lambda x: x.replace('-', '_'))
+          [FCS_COLS]
+          .pipe(log_transform)
+          .assign(file=filename)
+          .assign(**get_info(filename))
+         )
     
-    return gates_from_xy(xs, ys, kdims)
-  
-def xml_to_pandas_gates(xml_file, transform=log_transform):
-    gate_tags = extract_polygon_gates(xml_file)
-    coords = map(tag_to_coords, gate_tags)
-    gates = []
-    for xy, kdims in coords:
-        # guess direction
-        x0, y0 = xy[0] 
-        x1, y1 = xy[1]
-        x2, y2 = xy[2]
-        dx0, dy0 = x1 - x0, y1 - y0
-        dx1, dy1 = x2 - x1, y2 - y1
-        cross_product_z = dx0 * dy1 - dx1 * dy0
-        if cross_product_z < 0:
-            xy = xy[::-1]
+    return df
 
-        if transform:
-            xy = transform(np.array(xy))
-        gates += [coords_to_gate(xy, kdims)]
-    return gates
+def log_transform(x):
+    return np.log10(1 + np.abs(x))
+
+def fix_row(df):
+    """ duplicate row on plate1, Exp_20180322_1
+    """
+    filt = df['row'] == 'H'
+    df.loc[filt, 'row'] = 'G'
+    return df
 
 def load_gate_files():
     gate_files = glob('TM_Figure2_FlowJo/*fcs_gates.xml')
@@ -292,6 +176,73 @@ def make_layout():
     df = pd.concat([df1, df2]).query('sgRNA != "blank"')
     return df
 
+def add_mNeon_mCherry_gate(df):
+    flags = '1 * mNeon + 2 * mCherry + 4 * double_neg'
+    flags = '1 * mNeon + 2 * mCherry' 
+    categories = {0: 'double_pos', 1: 'mNeon', 
+                  2: 'mCherry', 4: 'double_neg'}
+    df['gate'] = (df.eval(flags).astype('category')
+                   .cat.rename_categories(categories))
+    return df
+
+## holoviews
+
+def apply_uni_rows(df):
+    
+    def uni_it(xs):
+        return [unichr(60000 + i) + x for i,x in enumerate(xs)]
+
+    rows = sorted(set(df['row']))[::-1]
+    uni_map = OrderedDict(zip(rows, uni_it(rows)))
+    df['row_uni'] = df['row'].apply(lambda x: uni_map[x])
+    
+    return df
+
+def to_grid_space(df, kdims_inner, kdims_outer, element=hv.Points):
+
+    gb = df.groupby(kdims_outer)
+    x = [(k, element(v, kdims=kdims_inner)) for k,v in gb]   
+
+    # GridSpace bug https://github.com/ioam/holoviews/issues/1787
+    grid = hv.GridSpace(x, kdims=kdims_outer)
+
+    return grid
+
+def make_gate_callback(df, gate_name='gate', kdims=(FSC_A, SSC_A)):
+    kdims = list(kdims)
+
+    def callback(data):
+        poly = data
+        
+        # debug
+        hv.poly = poly
+        
+        try:   
+            for i, (xs, ys) in enumerate(zip(poly['x'], poly['y'])):
+          
+                points = np.array(zip(xs, ys))
+
+                p = path.Path(points)
+                mask = p.contains_points(df[kdims])
+                
+                df[gate_name] = mask 
+                df[gate_name] = df[gate_name].astype(bool)
+
+                # stash in global dict
+                gate = gates_from_poly(poly, kdims)
+                try:                
+                    paella.gates[gate_name] = gate
+                except KeyError:
+                    paella.gates = {gate_name: gate}
+                break
+
+        except Exception as e:
+            hv.error = e
+            
+        return hv.Points(df, kdims=kdims)
+
+    return callback
+
 def raster_points(df, kdims, color_dim=None, normalization='log'):
     from holoviews.operation.datashader import datashade, aggregate, dynspread
 
@@ -316,3 +267,90 @@ def raster_points(df, kdims, color_dim=None, normalization='log'):
                        normalization=normalization)
         
     return dynspread(datashaded)
+
+## gate extraction
+
+def mx_plus_b(x0, x1, y0, y1):
+    m = (y1 - y0) / (x1 - x0)
+    b = y0 - m * x0
+    return m, b
+
+def make_gate(x0, x1, m, b, kdims):
+    comp = '>' if x1 > x0 else '<'
+    
+    gate = \
+    ('y | m*x + b'
+     .replace('m', str(m))
+     .replace('b', str(b))
+     .replace('x', kdims[0])
+     .replace('y', kdims[1])
+     .replace('|', comp)
+    )
+    return '(' + gate + ')'
+
+def gates_from_poly(poly, kdims):
+    xs = poly['x'][0]
+    ys = poly['y'][0]
+    return gates_from_xy(xs, ys, kdims)
+
+def gates_from_xy(xs, ys, kdims):
+    n = len(xs)
+    gates = []
+    for i in range(n):
+        x0, x1 = xs[i], xs[(i + 1) % n]
+        y0, y1 = ys[i], ys[(i + 1) % n]        
+        m, b = mx_plus_b(x0, x1, y0, y1)
+        gate = make_gate(x0, x1, m, b, kdims)
+        gates += [gate]
+        
+    final_gate = ' & '.join(gates)
+    return final_gate
+
+def extract_polygon_gates(xml_file):
+    with open(xml_file, 'r') as fh:
+        xml = fh.read()
+    soup = BeautifulSoup(xml, 'xml')
+    gates = soup.find_all('PolygonGate')
+    
+    return gates
+    
+def tag_to_coords(gate_tag):
+    arr = []
+    for vertex in gate_tag.find_all('vertex'):
+        x, y = vertex.find_all('coordinate')
+        x = float(x['data-type:value'])
+        y = float(y['data-type:value'])
+        arr += [(x, y)]
+
+    x, y = gate_tag.find_all('fcs-dimension')
+    x = x['data-type:name']
+    y = y['data-type:name']
+    kdims = [x, y]
+    return arr, kdims
+
+def coords_to_gate(xy, kdims):
+    xs, ys = zip(*xy)
+    kdims = map(lambda x: x.replace('-', '_'), kdims)
+    
+    return gates_from_xy(xs, ys, kdims)
+  
+def xml_to_pandas_gates(xml_file, transform=log_transform):
+    gate_tags = extract_polygon_gates(xml_file)
+    coords = map(tag_to_coords, gate_tags)
+    gates = []
+    for xy, kdims in coords:
+        # guess direction
+        x0, y0 = xy[0] 
+        x1, y1 = xy[1]
+        x2, y2 = xy[2]
+        dx0, dy0 = x1 - x0, y1 - y0
+        dx1, dy1 = x2 - x1, y2 - y1
+        cross_product_z = dx0 * dy1 - dx1 * dy0
+        if cross_product_z < 0:
+            xy = xy[::-1]
+
+        if transform:
+            xy = transform(np.array(xy))
+        gates += [coords_to_gate(xy, kdims)]
+    return gates
+
