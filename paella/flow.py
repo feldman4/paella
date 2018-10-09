@@ -14,11 +14,13 @@ def load_fcs(filename):
     df = df.rename(columns=lambda x: x.replace('-', '_'))
     return df.assign(file=filename)
 
-def add_sample_info(df):
+
+def add_sample_location(df):
     pat = '(\d\d)-Well-(.*).fcs'
     plate, well = re.findall(pat, df['file'].iloc[0])[0]
     row, col = well[0], int(well[1:])
     return df.assign(plate=plate, well=well, row=row, col=col)
+
 
 def transform_columns(df, columns, transform):
     df = df.copy()
@@ -37,16 +39,19 @@ def plot_flow(df, x, y, ax=None, color=None):
     ax.set_ylabel(y)
     return ax
 
+
 def plot_flow_sns(**kwargs):
     kwargs['df'] = kwargs.pop('data')
     kwargs.pop('color')
     return plot_flow(**kwargs)
+
 
 def add_gates(df, gates):
     df = df.copy() # copy if we are changing original
     for gate_name in gates:
         df[gate_name] = df.eval(gates[gate_name])
     return df
+
 
 def plot_with_gates(df, x, y, gate_names, limits=None, ax=None):
     gate = and_join(gate_names)
