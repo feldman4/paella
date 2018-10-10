@@ -33,14 +33,14 @@ except AttributeError:
 ## specific to pipeline
 
 def rename_variables_for_plot(df):
-	sgRNA_names = {'sg20N_304': 'guide 1',
+	sgRNA_names  = {'sg20N_304': 'guide 1',
 	                'sg20N_305': 'guide X',
 	                'sg20N_307': 'guide 2',
 	                'sg20N_308': 'guide 3',
 	                'sg20N_316': 'guide 4',
 	                'sg20N_318': 'guide 5',
 	                'sg20N_319': 'guide 6',
-	              }
+	                }
 
 	target_names = {'T304': 'target 1', 
 					'T305': 'target X', 
@@ -50,7 +50,8 @@ def rename_variables_for_plot(df):
 					'T318': 'target 5',
 					'T319': 'target 6',
 					'MT0': 'Multi-target 1', 
-					'MT1': 'Multi-target 2'}
+					'MT1': 'Multi-target 2',
+					}
 
 	return (df
 		 .assign(sgRNA=lambda x: x['sgRNA'].apply(sgRNA_names.get))      
