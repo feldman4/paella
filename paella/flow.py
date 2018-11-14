@@ -15,8 +15,10 @@ def load_fcs(filename):
     return df.assign(file=filename)
 
 
-def add_sample_location(df):
-    pat = '(\d\d)-Well-(.*).fcs'
+def add_sample_info(df):
+    """Get sample info from Cytoflex naming scheme.
+    """
+    pat = '(\d\d)-(?i)Tube-(.*).fcs'
     plate, well = re.findall(pat, df['file'].iloc[0])[0]
     row, col = well[0], int(well[1:])
     return df.assign(plate=plate, well=well, row=row, col=col)
@@ -53,13 +55,10 @@ def add_gates(df, gates):
     return df
 
 
-def plot_with_gates(df, x, y, gate_names, limits=None, ax=None):
-    gate = and_join(gate_names)
-    ax = (df
-     .query(gate)
-     .pipe(plot_flow, x, y, ax=ax)
-         )
-    ax.set_title(gate)
+def plot_with_dims(df, x, y, limits=None, ax=None):
+    """Plot and apply axis formatting.
+    """
+    ax = plot_flow(df, x, y, ax=ax)
     if limits:
         for dimension in limits:
             if x == dimension:
