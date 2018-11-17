@@ -24,9 +24,9 @@ IPython.get_ipython().magic('load_ext autoreload')
 IPython.get_ipython().magic('autoreload 2')
 
 from paella import pairwise
-
+import paella.flow
 from paella.analysis import *
-
+from paella.utils import and_join, or_join
 from tqdm import tqdm
 
 FSC_A  = 'FSC_A'
@@ -36,14 +36,7 @@ FSC_W  = 'FSC_Width'
 SSC_H  = 'SSC_H'
 FITC   = 'FITC_A'
 ECD    = 'ECD_A'
+PE     = 'PE_A'
+APC    = 'APC_A'
 TIME   = 'Time'
 
-### UTILS
-
-
-def bin_join(xs, symbol):
-    symbol = ' ' + symbol + ' ' 
-    return symbol.join('(%s)' % x for x in xs)
-        
-or_join  = functools.partial(bin_join, symbol='|')
-and_join = functools.partial(bin_join, symbol='&')
