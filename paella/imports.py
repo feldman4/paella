@@ -1,4 +1,4 @@
-import regex as re
+import re
 from collections import Counter, OrderedDict, defaultdict
 import pandas as pd
 from Levenshtein import distance
