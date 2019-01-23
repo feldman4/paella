@@ -3,9 +3,6 @@ from collections import Counter, OrderedDict, defaultdict
 import pandas as pd
 from Levenshtein import distance
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib
-import seaborn as sns
 from itertools import product, combinations
 from natsort import natsorted
 import os
@@ -13,7 +10,9 @@ from glob import glob
 import functools
 from functools import partial
 
-
+import matplotlib.pyplot as plt
+import matplotlib
+import seaborn as sns
 sns.set(style='white', font_scale=1.5)
 
 import IPython
@@ -27,7 +26,7 @@ from paella import pairwise
 import paella.flow
 from paella.analysis import *
 from paella.utils import and_join, or_join
-from tqdm import tqdm
+from tqdm import tqdm_notebook as tqdn
 
 FSC_A  = 'FSC_A'
 SSC_A  = 'SSC_A'
