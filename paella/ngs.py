@@ -128,3 +128,32 @@ def get_top_bcs(df_wide, n):
     return top_bcs
 
 bad_reps = ['d52, DMSO-4']  
+
+
+
+def pairwise_distances(barcodes):
+    """Returns pairwise distance matrix as a dataframe with labeled
+    index (rows) and columns
+    """
+    n = len(barcodes)
+    
+    if n > 10000:
+        print 'too many barcodes'
+        return
+
+    arr = np.zeros((n, n))
+    for i in range(n):
+        for j in range(i, n):
+            arr[i,j] = arr[j, i] = distance(barcodes[i], barcodes[j])
+            
+    return pd.DataFrame(arr, index=barcodes, columns=barcodes)
+
+def clustermap_from_distance_matrix(df_distances):
+    """Create seaborn clustermap from custom distance matrix. Input the distance
+    matrix as a dataframe to get labeled index (rows) and columns.
+    """
+    import scipy.spatial as sp
+    import scipy.cluster.hierarchy as hc
+    linkage = hc.linkage(sp.distance.squareform(df_distances), method='average')
+    cg = sns.clustermap(df_distances, row_linkage=linkage, col_linkage=linkage)
+    return cg
