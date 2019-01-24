@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from natsort import natsorted
+from Levenshtein import distance
 
 def load_info(f):
     """Load sample info from deconvolution tab.
@@ -138,7 +139,7 @@ def pairwise_distances(barcodes):
     n = len(barcodes)
     
     if n > 10000:
-        print 'too many barcodes'
+        print('too many barcodes')
         return
 
     arr = np.zeros((n, n))
@@ -157,3 +158,20 @@ def clustermap_from_distance_matrix(df_distances):
     linkage = hc.linkage(sp.distance.squareform(df_distances), method='average')
     cg = sns.clustermap(df_distances, row_linkage=linkage, col_linkage=linkage)
     return cg
+
+
+def cleanup_duplicates(df, top_n, count_cols, convert_log=True):
+    from paella.UMIGraph import UMIGraph
+    """Sort input, duplicates only removed from top n.
+    Discards duplicate entries (could also sum).
+    """
+    counts = df[count_cols].mean(axis=1)
+    if convert_log:
+        counts = 10**(7 + counts)
+        
+    G = UMIGraph(df.index[:top_n], 
+                 counts=counts[:top_n].astype(int), 
+                 threshold=3)
+    discard = sorted(set(df.index[:top_n]) - set(G.component_dict.values()))
+    print('discarding', len(discard), 'duplicates')
+    return df.query('index != @discard')
