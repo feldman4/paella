@@ -160,18 +160,80 @@ def clustermap_from_distance_matrix(df_distances):
     return cg
 
 
-def cleanup_duplicates(df, top_n, count_cols, convert_log=True):
+def cleanup_duplicates(df, top_n, convert_log=True, kmer=None):
     from paella.UMIGraph import UMIGraph
     """Sort input, duplicates only removed from top n.
     Discards duplicate entries (could also sum).
-    """
-    counts = df[count_cols].mean(axis=1)
+    """ 
+    cols = list(df.filter(regex='^L').columns)
+    data = df[cols]
     if convert_log:
-        counts = 10**(7 + counts)
-        
+        data = 10**(7 + data)
+
+    # the actual count used for each barcode is just averaged across columns
+    # in the table
+    counts = data.mean(axis=1)
+
     G = UMIGraph(df.index[:top_n], 
                  counts=counts[:top_n].astype(int), 
-                 threshold=3)
+                 threshold=3, kmer=kmer)
     discard = sorted(set(df.index[:top_n]) - set(G.component_dict.values()))
     print('discarding', len(discard), 'duplicates')
     return df.query('index != @discard')
+
+def fillna_wide(df, log_cutoff):
+    """Use different rules for libraries (starts with L) and ranks.
+    """
+    df = df.copy()
+    cols  = [x for x in df.columns if x.startswith('L')]
+    cols_ = [x for x in df.columns if 'rank' in x]
+    df[cols] = df[cols].fillna(log_cutoff)
+    df[cols_] = df[cols_].fillna(df[cols_].max().max())
+    return df
+
+
+def get_rank(df_wide, rank):
+    if rank == 'min':
+        rank = len(df_wide.columns) - 1
+    return (df_wide
+     .pipe(lambda x: (-x).rank())
+     .pipe(lambda x: np.sort(x)[:, rank])
+    )
+
+
+def get_sample_groups(df_wide, groups, log_cutoff):
+    """Get subset of wide table with samples in groups, assign ranks within
+    groups.
+    groups = {'JQ1': figure2.D458_JQ1, 'DMSO': figure2.D458_DMSO}
+    """
+    arr = []
+    for name, samples in groups.items():
+        rank_name = 'min_rank_' + name
+        (df_wide
+         .query('length == 26')
+         [samples]
+         .dropna(how='all').fillna(log_cutoff)
+         .assign(**{rank_name: lambda x: get_rank(x, 0)})
+         .pipe(arr.append)
+        )
+    return pd.concat(arr, axis=1, sort=True).pipe(fillna_wide, log_cutoff)
+
+
+def assign_barcode_sets(df_wide, groups, num_top):
+    """Define barcode sets based on rank threshold in each group (e.g.,
+    set of top barcodes in one group only, set of top barcodes across all 
+    groups, etc).
+    """
+    # assign barcode sets
+    conditions = groups.keys()
+    cols = ['min_rank_' + c for c in conditions]
+    
+    arr = []
+    for vals in df_wide[cols].values:
+        xs = []
+        for c, v in zip(conditions, vals):
+            if v < num_top:
+                xs += ['{0}_{1}'.format(c, num_top)]
+        arr.append('_'.join(xs))
+
+    return df_wide.assign(barcode_set=arr)

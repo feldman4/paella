@@ -16,3 +16,9 @@ def set_apply(df, col, f):
 	inputs = sorted(set(df[col]))
 	result = pd.DataFrame([f(x) for x in inputs], index=inputs)
 	return df.join(result, on=col)
+
+def transform_cols(df, regex, f):
+    df = df.copy()
+    cols = df.filter(regex=regex).columns
+    df[cols] = f(df[cols])
+    return df

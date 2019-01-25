@@ -34,12 +34,13 @@ def edit_distance_sparse(sequences, k=8):
     for v in kmers.values():
         pairs.extend((a,b) for i, a in enumerate(v) for b in v[:i])
 
-    print (len(pairs))
+    print('# of sparse distance calculations:', len(pairs))
+
     
     # memory issues...
     # pairs = set(pairs)
     import pandas as pd
-    pairs = pd.DataFrame(pairs).drop_duplicates().values()
+    pairs = pd.DataFrame(pairs).drop_duplicates().values
     
 
     n = len(sequences)
@@ -123,7 +124,7 @@ class UMIGraph(object):
         self.threshold = threshold
         if kmer:
             # distance threshold to include edge in adjacency matrix set to 1
-            self.distances = edit_distance_sparse(self.sequences, k=kmer)
+            self.distances, _ = edit_distance_sparse(self.sequences, k=kmer)
             self.M = make_adjacency_sparse(self.distances, self.counts, threshold=threshold)
         else:
             self.distances = edit_distance(self.sequences)
@@ -211,7 +212,7 @@ def base_distribution(sequences):
     df['len'] = df['sequence'].apply(len)
     length = np.bincount(df['len'], df['counts']).argmax()
     df.query('len==@length')
-    y = [list(s) for s in df.query('len==@length')['sequence'].values()]
+    y = [list(s) for s in df.query('len==@length')['sequence'].values]
     z = [np.unique(x, return_counts=True)[1] for x in np.array(y).T]
     z = np.array(z).astype(float)
     z = z/z.sum(axis=1)[:,None]
