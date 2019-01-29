@@ -219,19 +219,18 @@ def get_sample_groups(df_wide, groups, log_cutoff):
     return pd.concat(arr, axis=1, sort=True).pipe(fillna_wide, log_cutoff)
 
 
-def assign_barcode_sets(df_wide, groups, num_top):
+def assign_barcode_sets(df_wide, group_names, num_top):
     """Define barcode sets based on rank threshold in each group (e.g.,
     set of top barcodes in one group only, set of top barcodes across all 
     groups, etc).
     """
     # assign barcode sets
-    conditions = groups.keys()
-    cols = ['min_rank_' + c for c in conditions]
+    cols = ['min_rank_' + c for c in group_names]
     
     arr = []
     for vals in df_wide[cols].values:
         xs = []
-        for c, v in zip(conditions, vals):
+        for c, v in zip(group_names, vals):
             if v < num_top:
                 xs += ['{0}_{1}'.format(c, num_top)]
         arr.append('_'.join(xs))
