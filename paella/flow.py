@@ -67,10 +67,23 @@ def plot_flow_sns(**kwargs):
     return plot_flow(**kwargs)
 
 
+def multi_and_eval(df, gate):
+    n = 5
+    lines = gate.split('&')
+    subgates = [and_join(lines[n*i:n*(i+1)]) for i in range(int(len(lines)/n) + 1)]
+    arr = [df.eval(s) for s in subgates if s]
+    if len(arr) == 1:
+        return arr[0]
+    else:
+        for x in arr[1:]:
+            arr[0] = arr[0] & x
+        return arr[0]
+
+
 def add_gates(df, gates):
     df = df.copy() # copy if we are changing original
     for gate_name in gates:
-        df[gate_name] = df.eval(gates[gate_name])
+        df[gate_name] = multi_and_eval(df, gates[gate_name])
     return df
 
 
