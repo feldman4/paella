@@ -12,7 +12,7 @@ gates = {
 }
 
 limits = {
-    ECD:   [3, 6],
+    ECD:   [2, 6],
     FITC:  [2.5, 6.5],
     APC:   [3, 6],
     PE:    [1.1, 5],
@@ -22,10 +22,17 @@ limits = {
 }
 
 
+# name_map = {'FL1_A': FITC,
+#  'FL10_A': PE,
+#  'FL3_A': APC,
+#  # 'inf': '9999999',
+#  }
 name_map = {'FL1_A': FITC,
  'FL10_A': PE,
  'FL3_A': APC,
- # 'inf': '9999999',
+ 'FL6_H': PB450,
+ 'FL7_H': KO525,
+#  # 'inf': '9999999',
  }
 
 

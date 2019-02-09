@@ -2,11 +2,16 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+import paella.utils
+import seaborn as sns
+
 D458_examples = ['L03', 'L04', 'L05', 'L26', 'L27']
 
 D458_ETP = ['L26'] 
 D458_JQ1 = ['L27', 'L28', 'L29', 'L30', 'L31']
 D458_DMSO = ['L32', 'L33', 'L34', 'L35', 'L36']
+D458_DMSO_1 = ['L32', 'L33', 'L34', 'L36'] # drop bad replicate
+
 D458_screen = D458_ETP + D458_JQ1 + D458_DMSO
 
 PC9_ETP = ['L10']
@@ -14,8 +19,16 @@ PC9_1uM  = ['L11', 'L12', 'L13', 'L14', 'L15']
 PC9_60nM = ['L16', 'L17', 'L18', 'L19', 'L20']
 PC9_DMSO = ['L21', 'L22', 'L23', 'L24', 'L25']
 
-PC9_screen = ['L10'] + PC9_60nM + PC9_1uM + PC9_DMSO
-PC9_screen_1uM = ['L10'] + PC9_1uM + PC9_DMSO
+PC9_screen = PC9_ETP  + PC9_60nM + PC9_1uM + PC9_DMSO
+PC9_screen_1uM = PC9_ETP  + PC9_1uM + PC9_DMSO
+
+PC9_ETP_20N = ['L178', 'L179', 'L180', 'L181', 'L182']
+PC9_ETP_20N_1 = ['L179']
+PC9_1uM_20N = ['L169', 'L170', 'L171', 'L172', 'L173']
+PC9_Osi = ['L174', 'L175', 'L176', 'L177']
+PC9_DMSO_20N = ['L164', 'L165', 'L166', 'L167', 'L168']
+
+PC9_ETP_20N = ['L178', 'L179', 'L180', 'L181', 'L182']
 
 
 def plot_count_dist(counts, ticks=None):
@@ -75,6 +88,7 @@ def load_PC9_cell_counts(f):
 
     return df_counts, df_counts_wide
 
+
 def PC9_growth_rate(df_counts_wide):
     # make a growth rate table (doublings per day)
     growth_rate = (df_counts_wide['Cells counted'].values / 
@@ -120,3 +134,55 @@ def PC9_cumulative_count(df_counts, df_counts_wide, ):
                    df_adj], sort=True)
 
     return df_adj
+
+
+def plot_barcode_color(df_plt, hue_order, palette):
+    """Plot clustermap using `barcode_set` column to label rows.
+    """
+    assert df_plt['barcode_set'].pipe(set) == set(hue_order)
+    get_color = lambda x: dict(zip(hue_order, palette)).get(x, 'white')
+    colors = df_plt['barcode_set'].map(get_color)
+    
+    return (df_plt
+     .drop(['barcode_set'], axis=1)
+     .pipe(sns.clustermap, row_colors=colors, row_cluster=True, col_cluster=False)
+     )
+    
+
+def plot_stacked_replicates(df_wide, threshold, colors=None, reverse_legend=True):
+    df = (df_wide
+      .pipe(lambda x: x>threshold)
+      .assign(count=lambda x: x.sum(axis=1))
+      )
+    
+    arr = []
+    for col in df_wide.columns:
+        # only take barcodes present in this JQ1 sample
+        filt = df[col] > 0
+        # for those barcodes, histogram of number of JQ1 replicates with the barcode
+        counts = df[filt]['count'].value_counts().rename(col)
+        counts.index + 1
+        arr.append(counts)
+    
+    df_shared_reps = pd.concat(arr, axis=1)
+    
+    if colors is None:
+        colors = sns.color_palette('Reds', df_wide.shape[1] - 1) + ['black']
+    ax = (df_shared_reps
+     .pipe(lambda x: x / x.sum())
+     [::-1] #reverse d
+     .T.plot(kind='bar', stacked=True, 
+             color=colors,
+              grid = False,
+            )
+    )
+
+    ax.set_ylabel('fraction of barcodes in sample')
+    ax.set_xticklabels(ax.get_xticklabels(), rotation='horizontal')
+    
+    handles, labels = ax.get_legend_handles_labels()
+    if reverse_legend:
+        handles, labels = handles[::-1], labels[::-1]
+    ax.legend(handles, labels, bbox_to_anchor=(1, 0.85), frameon=False)
+        
+    return df_shared_reps, ax
