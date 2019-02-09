@@ -136,17 +136,23 @@ def PC9_cumulative_count(df_counts, df_counts_wide, ):
     return df_adj
 
 
-def plot_barcode_color(df_plt, hue_order, palette):
+def plot_barcode_color(df_plt, hue_order, palette, optimal_ordering=True):
     """Plot clustermap using `barcode_set` column to label rows.
     """
     assert df_plt['barcode_set'].pipe(set) == set(hue_order)
     get_color = lambda x: dict(zip(hue_order, palette)).get(x, 'white')
     colors = df_plt['barcode_set'].map(get_color)
     
-    return (df_plt
-     .drop(['barcode_set'], axis=1)
-     .pipe(sns.clustermap, row_colors=colors, row_cluster=True, col_cluster=False)
-     )
+    df_plt = df_plt.drop(['barcode_set'], axis=1) 
+
+    from scipy.cluster import hierarchy
+    row_linkage = hierarchy.linkage(df_plt, optimal_ordering=optimal_ordering)
+
+    return sns.clustermap(data=df_plt, 
+        #row_linkage=row_linkage,
+        row_cluster=False,
+        row_colors=colors,  col_cluster=False)
+     
     
 
 def plot_stacked_replicates(df_wide, threshold, colors=None, reverse_legend=True):
