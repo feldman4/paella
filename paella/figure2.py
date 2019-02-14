@@ -45,12 +45,15 @@ def plot_count_dist(counts, ticks=None):
     cdf = np.cumsum(counts) / sum(counts)
     ax1.plot(np.log10(bins), cdf)
     ax1.set_ylabel('cumulative fraction')
+    ax0.set_ylabel('number of barcodes')
 
     ax0.stem(np.log10(bins), counts, markerfmt='.')
 
     
     ax0.set_xticks([np.log10(x) for x in ticks])
     ax0.set_xticklabels(ticks);
+
+    # plt.tight_layout(h_pad=-100)
 
     return fig, ax0, ax1
 
