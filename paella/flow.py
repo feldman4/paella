@@ -193,6 +193,7 @@ def gates_from_poly(poly, kdims):
 def gates_from_xy(xs, ys, kdims):
     n = len(xs)
     gates = []
+    #print("xs = {}".format(xs))
     for i in range(n):
         x0, x1 = xs[i], xs[(i + 1) % n]
         y0, y1 = ys[i], ys[(i + 1) % n]        
@@ -248,6 +249,9 @@ def compress_below(x, cutoff, factor):
 def xml_to_pandas_gates(xml_file, transform=log_transform):
     gate_tags = extract_polygon_gates(xml_file)
     coords = map(tag_to_coords, gate_tags)
+    # print("=" * 80)
+    # print("COO")
+    # print(coords)
 
     gates = []
     for xy, kdims in coords:
@@ -255,9 +259,14 @@ def xml_to_pandas_gates(xml_file, transform=log_transform):
         x0, y0 = xy[0] 
         x1, y1 = xy[1]
         x2, y2 = xy[2]
+        #print(x0, x1, x2)
+
         dx0, dy0 = x1 - x0, y1 - y0
         dx1, dy1 = x2 - x1, y2 - y1
         cross_product_z = dx0 * dy1 - dx1 * dy0
+        #print("=" * 80)
+        #print(xy)
+        #print("=" * 80)
 
         if cross_product_z < 0:
             xy = xy[::-1]
