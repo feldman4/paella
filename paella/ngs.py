@@ -244,15 +244,19 @@ def assign_barcode_sets(df_wide, group_names, num_top, prefix='rank_min_'):
     set of top barcodes in one group only, set of top barcodes across all 
     groups, etc). Applies threshold to columns with name '{prefix}{group}' (e.g., 
     'rank_min_DMSO').
+
+    `num_top` can be a single number or a dictionary from group names to thresholds.
     """
     # assign barcode sets
     cols = [prefix + c for c in group_names]
-    
+    if not isinstance(num_top, dict):
+        num_top = {k: num_top for k in group_names}
+
     arr = []
     for vals in df_wide[cols].values:
         xs = []
         for c, v in zip(group_names, vals):
-            if v < num_top:
+            if v < num_top[c]:
                 xs += ['{0}_{1}'.format(c, num_top)]
         arr.append('_'.join(xs))
 
