@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from natsort import natsorted
 from Levenshtein import distance
+import re
 
 def load_info(f):
     """Load sample info from deconvolution tab.
@@ -30,7 +31,7 @@ def load_hist(f, bad_seqs=None, threshold=3):
      .query('seq != @bad_seqs') # remove any provided bad sequences
      .assign(fraction=lambda x: x['count']/x['count'].sum())
      .assign(file=f)
-     .assign(ID=lambda x: x['file'].str.extract('(L\d+)'))
+     .assign(ID=re.findall('L\d+', f)[0])
      .assign(seq=lambda x: x['seq'].pipe(fix_prefix_suffix))
      .assign(length=lambda x: x['seq'].str.len())
      .assign(rank=lambda x: np.arange(len(x)).astype(int)) 
