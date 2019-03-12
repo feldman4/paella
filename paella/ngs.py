@@ -258,7 +258,7 @@ def assign_barcode_sets(df_wide, group_names, num_top, prefix='rank_min_'):
         xs = []
         for c, v in zip(group_names, vals):
             if v < num_top[c]:
-                xs += ['{0}_{1}'.format(c, num_top)]
+                xs += ['{0}_{1}'.format(c, num_top[c])]
         arr.append('_'.join(xs))
 
     return df_wide.assign(barcode_set=arr)
