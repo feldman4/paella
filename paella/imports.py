@@ -12,6 +12,7 @@ from functools import partial
 
 import matplotlib.pyplot as plt
 import matplotlib
+from matplotlib import rcParams
 import seaborn as sns
 sns.set(style='white', font_scale=1.5)
 
