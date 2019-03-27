@@ -68,7 +68,8 @@ def plot_D458_abundances(df_wide, df_info):
     
     ax.set_yscale('log')
     ax.set_xscale('log')
-    ax.set_xlim([1e2, 1e6])    
+    # ax.set_xlim([1e2, 1e6]) 
+    ax.set_xlim([1e0, 1e6])    
     ax.legend(bbox_to_anchor=(1.07, 1.03))
     return fig
 
