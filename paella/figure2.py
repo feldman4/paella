@@ -7,6 +7,7 @@ import seaborn as sns
 
 D458_examples = ['L03', 'L04', 'L05', 'L26', 'L27']
 
+#D458 26N
 D458_ETP = ['L26'] 
 D458_JQ1 = ['L27', 'L28', 'L29', 'L30', 'L31']
 D458_DMSO = ['L32', 'L33', 'L34', 'L35', 'L36']
@@ -14,6 +15,7 @@ D458_DMSO_1 = ['L32', 'L33', 'L34', 'L36'] # drop bad replicate
 
 D458_screen = D458_ETP + D458_JQ1 + D458_DMSO
 
+#PC9 26N
 PC9_ETP = ['L10']
 PC9_1uM  = ['L11', 'L12', 'L13', 'L14', 'L15']
 PC9_60nM = ['L16', 'L17', 'L18', 'L19', 'L20']
@@ -22,14 +24,21 @@ PC9_DMSO = ['L21', 'L22', 'L23', 'L24', 'L25']
 PC9_screen = PC9_ETP  + PC9_60nM + PC9_1uM + PC9_DMSO
 PC9_screen_1uM = PC9_ETP  + PC9_1uM + PC9_DMSO
 
+#PC9 20N
 PC9_ETP_20N = ['L178', 'L179', 'L180', 'L181', 'L182']
 PC9_ETP_20N_1 = ['L179']
 PC9_1uM_20N = ['L169', 'L170', 'L171', 'L172', 'L173']
 PC9_Osi = ['L174', 'L175', 'L176', 'L177']
 PC9_DMSO_20N = ['L164', 'L165', 'L166', 'L167', 'L168']
 
-PC9_ETP_20N = ['L178', 'L179', 'L180', 'L181', 'L182']
+#Hela 20N
+Hela_ETP = ['L218']
+Hela_PBS = ['L219', 'L220', 'L221', 'L222', 'L223']
+Hela_Hygro = ['L224', 'L225', 'L226', 'L227', 'L228']
 
+T1 = 'AGATCGTACCAGGGATTGGG'
+T2 = 'TGCAGTGGCCGTTGACAAAT'
+T3 = 'GCGGGATCATTGCAATTATA'
 
 def plot_count_dist(counts, ticks=None):
 
@@ -155,7 +164,9 @@ def plot_barcode_color(df_plt, hue_order, palette, optimal_ordering=True):
     return sns.clustermap(data=df_plt, 
         #row_linkage=row_linkage,
         row_cluster=False,
-        row_colors=colors,  col_cluster=False)
+        row_colors=colors,  
+        yticklabels=0,
+        col_cluster=False)
      
     
 
