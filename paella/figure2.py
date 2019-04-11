@@ -5,9 +5,15 @@ import pandas as pd
 import paella.utils
 import seaborn as sns
 
-D458_examples = ['L03', 'L04', 'L05', 'L26', 'L27']
+D458_examples = ['L32', 'L26', 'L27','L05']
+D458_examples = [
+    ('L26', 'ETP'), 
+    ('L32', 'DMSO'),
+    ('L27', 'JQ1')]
 
 #D458 26N
+D458_pre_freeza = ['L03']
+D458_post_freeze= ['L04']
 D458_ETP = ['L26'] 
 D458_JQ1 = ['L27', 'L28', 'L29', 'L30', 'L31']
 D458_DMSO = ['L32', 'L33', 'L34', 'L35', 'L36']
@@ -39,6 +45,17 @@ Hela_Hygro = ['L224', 'L225', 'L226', 'L227', 'L228']
 T1 = 'AGATCGTACCAGGGATTGGG'
 T2 = 'TGCAGTGGCCGTTGACAAAT'
 T3 = 'GCGGGATCATTGCAATTATA'
+
+
+custom_rcParams = {
+    'legend.frameon': False
+}
+
+def apply_rcParams():
+    from matplotlib import rcParams
+    for k in custom_rcParams:
+        rcParams[k] = custom_rcParams[k]
+
 
 def plot_count_dist(counts, ticks=None):
 
@@ -72,7 +89,8 @@ def plot_D458_abundances(df_wide, df_info):
 
     for library in D458_examples:
         xs = df_wide[library].dropna().sort_values(ascending=False)
-        label = df_info.loc[library]['name']
+        # label = df_info.loc[library]['name']
+        label = df_info.loc[library]['sample_info']
         ax.plot(xs[1:200000].pipe(list), label=label)
     
     ax.set_yscale('log')
@@ -166,6 +184,7 @@ def plot_barcode_color(df_plt, hue_order, palette, optimal_ordering=True):
         row_cluster=False,
         row_colors=colors,  
         yticklabels=0,
+        xticklabels=0,
         col_cluster=False)
      
     
@@ -207,3 +226,17 @@ def plot_stacked_replicates(df_wide, threshold, colors=None, reverse_legend=True
     ax.legend(handles, labels, bbox_to_anchor=(1, 0.85), frameon=False)
         
     return df_shared_reps, ax
+
+def log_scale_ticks(ax, axis='x'):
+    """Format x tick labels as exponents
+    """
+    if axis == 'x':
+        get_labels, set_labels = ax.get_xticks, ax.set_xticklabels
+    elif axis == 'y':
+        get_labels, set_labels = ax.get_yticks, ax.set_yticklabels
+    else:
+        raise ValueError
+    labels = get_labels()
+    format_exponent = lambda x: '{' + '{0:d}'.format(int(x)) + '}'
+    new_labels = ['$10^{0}$'.format(format_exponent(x)) for x in labels]
+    set_labels(new_labels)
