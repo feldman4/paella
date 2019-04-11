@@ -33,7 +33,8 @@ def read_fasta(f):
         lines = fh.read().split('\n')
     header = lines[0][1:]
     seq = ''.join(lines[1:])
-    return header, seq
+    # return header, seq
+    return seq
 
 def to_96W(df, values):
     return df.pivot(index='row', columns='col', values=values).fillna(0)
