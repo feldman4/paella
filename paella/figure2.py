@@ -9,7 +9,19 @@ D458_examples = ['L32', 'L26', 'L27','L05']
 D458_examples = [
     ('L26', 'ETP'), 
     ('L32', 'DMSO'),
-    ('L27', 'JQ1')]
+    ('L27', 'JQ1')]  
+
+D458_all_examples = {'DMSO-1': 'L32',
+ 'DMSO-2': 'L33',
+ 'DMSO-3': 'L34',
+ # 'DMSO-4': 'L35',
+ 'DMSO-5': 'L36',
+ 'ETP': 'L26',
+ # 'JQ1-1': 'L27',
+ 'JQ1-2': 'L28',
+ 'JQ1-3': 'L29',
+ 'JQ1-4': 'L30',
+ 'JQ1-5': 'L31'}
 
 #D458 26N
 D458_pre_freeza = ['L03']
@@ -57,7 +69,7 @@ def apply_rcParams():
         rcParams[k] = custom_rcParams[k]
 
 
-def plot_count_dist(counts, ticks=None):
+def plot_count_dist(counts, show_total=True, ticks=None):
 
     fig, ax0 = plt.subplots()
     ax1 = ax0.twinx()
@@ -70,8 +82,9 @@ def plot_count_dist(counts, ticks=None):
 
     cdf = np.cumsum(counts) / sum(counts)
     ax1.plot(np.log10(bins), cdf)
-    ax1.set_ylabel('cumulative fraction')
-    ax0.set_ylabel('number of barcodes')
+    ax1.set_ylabel('Cumulative fraction')
+    ax0.set_ylabel('Number of barcodes')
+    ax0.set_xlabel('Read counts')
 
     ax0.stem(np.log10(bins), counts, markerfmt='.')
 
@@ -81,6 +94,9 @@ def plot_count_dist(counts, ticks=None):
 
     # plt.tight_layout(h_pad=-100)
 
+    if show_total:
+        label = '{:,} barcodes detected'.format(int(counts.sum()))
+        ax0.text(0.32, 0.75, label, transform=ax0.transAxes, fontsize=16)
     return fig, ax0, ax1
 
 
@@ -181,6 +197,7 @@ def plot_barcode_color(df_plt, hue_order, palette, optimal_ordering=True):
 
     return sns.clustermap(data=df_plt, 
         #row_linkage=row_linkage,
+        cmap=plt.cm.RdBu_r,
         row_cluster=False,
         row_colors=colors,  
         yticklabels=0,
@@ -217,7 +234,8 @@ def plot_stacked_replicates(df_wide, threshold, colors=None, reverse_legend=True
             )
     )
 
-    ax.set_ylabel('fraction of barcodes in sample')
+    ax.set_ylabel('Fraction of JQ1-enriched \nbarcodes in replicates')
+    ax.set_xlabel('JQ1 replicates')
     ax.set_xticklabels(ax.get_xticklabels(), rotation='horizontal')
     
     handles, labels = ax.get_legend_handles_labels()
