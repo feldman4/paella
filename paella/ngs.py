@@ -194,20 +194,18 @@ def fillna_wide(df, log_cutoff):
 
 
 def get_rank(df_wide, rank):
-    if rank == 'min':
-        rank = len(df_wide.columns) - 1
     return (df_wide
      .pipe(lambda x: (-x).rank())
      .pipe(lambda x: np.sort(x)[:, rank])
     )
 
 def get_val(df_wide, rank):
-    if rank == 'min':
-        rank = len(df_wide.columns) - 1
+    """rank is high to low (e.g., rank=0 returns max)
+    """
     return -np.sort(-df_wide.values, axis=1)[:, rank]
 
 
-def get_sample_groups(df_wide, groups, log_cutoff, ranks=('min', '2nd')):
+def get_sample_groups(df_wide, groups, log_cutoff, ranks=('max', '2nd', 'med')):
     """Get subset of wide table with samples in groups, assign ranks within
     groups. 
     groups = {'JQ1': figure2.D458_JQ1, 'DMSO': figure2.D458_DMSO}
@@ -217,18 +215,29 @@ def get_sample_groups(df_wide, groups, log_cutoff, ranks=('min', '2nd')):
         for r in ranks:
             rank_name = 'rank_{0}_{1}'.format(r, name)
             val_name = 'val_{0}_{1}'.format(r, name)
-            if r == 'min':
+            if r == 'max':
                 d[rank_name] = get_rank(df, 0)
                 d[val_name]  = get_val(df, 0)
             elif r == '2nd':
+                # 2nd lowest
                 if df.shape[1] > 1:
                     d[rank_name] = get_rank(df, -2)
                     d[val_name]  = get_val(df, -2)
+            elif r == 'med':
+                n = df.shape[1]
+                if 2 * int(n/2) == n:
+                    # even
+                    i0, i1 = int(n/2) - 1, int(n/2)
+                    d[rank_name] = (get_rank(df, i0) + get_rank(df, i1))/2
+                    d[val_name]  = (get_val(df, i0)  + get_val(df, i1))/2
+                else:
+                    # odd
+                    i =  int(n/2)
+                    d[rank_name] = get_rank(df, i)
+                    d[val_name] = get_val(df, i)
             else:
                 raise ValueError('{0} not recognized'.format(r))
         return df.assign(**d)
-
-        min_rank_
     arr = []
     for name, samples in groups.items():
         (df_wide
@@ -240,21 +249,25 @@ def get_sample_groups(df_wide, groups, log_cutoff, ranks=('min', '2nd')):
     return pd.concat(arr, axis=1, sort=True).pipe(fillna_wide, log_cutoff)
 
 
-def assign_barcode_sets(df_wide, group_names, num_top, prefix='rank_min_'):
+def assign_barcode_sets(df_wide, group_names, num_top, prefix='rank_max_'):
     """Define barcode sets based on rank threshold in each group (e.g.,
     set of top barcodes in one group only, set of top barcodes across all 
     groups, etc). Applies threshold to columns with name '{prefix}{group}' (e.g., 
     'rank_min_DMSO').
+
+    `num_top` can be a single number or a dictionary from group names to thresholds.
     """
     # assign barcode sets
     cols = [prefix + c for c in group_names]
-    
+    if not isinstance(num_top, dict):
+        num_top = {k: num_top for k in group_names}
+
     arr = []
     for vals in df_wide[cols].values:
         xs = []
         for c, v in zip(group_names, vals):
-            if v < num_top:
-                xs += ['{0}_{1}'.format(c, num_top)]
+            if v < num_top[c]:
+                xs += ['{0}_{1}'.format(c, num_top[c])]
         arr.append('_'.join(xs))
 
     return df_wide.assign(barcode_set=arr)

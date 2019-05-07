@@ -74,6 +74,38 @@ def fix_row(df):
 def rename_variables_for_plot(df):
     sgRNA_names  = {'sg20N_304': 'guide 1',
                     'sg20N_305': 'guide X',
+                    'sg20N_307': 'guide X1',
+                    'sg20N_308': 'guide 2',
+                    'sg20N_316': 'guide 3',
+                    'sg20N_318': 'guide 4',
+                    'sg20N_319': 'guide 5',
+                    }
+
+    target_names = {'T304': 'target 1', 
+                    'T305': 'target X', 
+                    'T307': 'target X1', 
+                    'T308': 'target 2', 
+                    'T316': 'target 3', 
+                    'T318': 'target 4',
+                    'T319': 'target 5',
+                    'MT0': 'Multi-target 1', 
+                    'MT1': 'Multi-target 2',
+                    }
+
+    # reporter_names = {'TM36': 'FR-EF1a-mNeon-Blast-mCherry', 
+    #                 'TM42': 'FR-EF1a-Zeo-mNeon-Blast-mCherry', 
+    #                 'TM43': 'FR-EF1a-H2K-mNeon-Blast-mCherr'
+    #                  }
+
+    return (df
+         .assign(sgRNA=lambda x: x['sgRNA'].apply(sgRNA_names.get))      
+         .assign(target=lambda x: x['target'].apply(target_names.get))
+         # .assign(reporter=lambda x: x['reporter'].apply(reporter_names.get)) 
+        )
+
+def rename_MT_variables_for_plot(df):
+    sgRNA_names  = {'sg20N_304': 'guide 1',
+                    'sg20N_305': 'guide X',
                     'sg20N_307': 'guide 2',
                     'sg20N_308': 'guide 3',
                     'sg20N_316': 'guide 4',

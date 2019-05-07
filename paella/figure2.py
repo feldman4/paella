@@ -5,8 +5,27 @@ import pandas as pd
 import paella.utils
 import seaborn as sns
 
-D458_examples = ['L03', 'L04', 'L05', 'L26', 'L27']
+D458_examples = ['L32', 'L26', 'L27','L05']
+D458_examples = [
+    ('L26', 'ETP'), 
+    ('L32', 'DMSO'),
+    ('L27', 'JQ1')]  
 
+D458_all_examples = {'DMSO-1': 'L32',
+ 'DMSO-2': 'L33',
+ 'DMSO-3': 'L34',
+ # 'DMSO-4': 'L35',
+ 'DMSO-5': 'L36',
+ 'ETP': 'L26',
+ # 'JQ1-1': 'L27',
+ 'JQ1-2': 'L28',
+ 'JQ1-3': 'L29',
+ 'JQ1-4': 'L30',
+ 'JQ1-5': 'L31'}
+
+#D458 26N
+D458_pre_freeza = ['L03']
+D458_post_freeze= ['L04']
 D458_ETP = ['L26'] 
 D458_JQ1 = ['L27', 'L28', 'L29', 'L30', 'L31']
 D458_DMSO = ['L32', 'L33', 'L34', 'L35', 'L36']
@@ -14,6 +33,7 @@ D458_DMSO_1 = ['L32', 'L33', 'L34', 'L36'] # drop bad replicate
 
 D458_screen = D458_ETP + D458_JQ1 + D458_DMSO
 
+#PC9 26N
 PC9_ETP = ['L10']
 PC9_1uM  = ['L11', 'L12', 'L13', 'L14', 'L15']
 PC9_60nM = ['L16', 'L17', 'L18', 'L19', 'L20']
@@ -22,16 +42,34 @@ PC9_DMSO = ['L21', 'L22', 'L23', 'L24', 'L25']
 PC9_screen = PC9_ETP  + PC9_60nM + PC9_1uM + PC9_DMSO
 PC9_screen_1uM = PC9_ETP  + PC9_1uM + PC9_DMSO
 
+#PC9 20N
 PC9_ETP_20N = ['L178', 'L179', 'L180', 'L181', 'L182']
 PC9_ETP_20N_1 = ['L179']
 PC9_1uM_20N = ['L169', 'L170', 'L171', 'L172', 'L173']
 PC9_Osi = ['L174', 'L175', 'L176', 'L177']
 PC9_DMSO_20N = ['L164', 'L165', 'L166', 'L167', 'L168']
 
-PC9_ETP_20N = ['L178', 'L179', 'L180', 'L181', 'L182']
+#Hela 20N
+Hela_ETP = ['L218']
+Hela_PBS = ['L219', 'L220', 'L221', 'L222', 'L223']
+Hela_Hygro = ['L224', 'L225', 'L226', 'L227', 'L228']
+
+T1 = 'AGATCGTACCAGGGATTGGG'
+T2 = 'TGCAGTGGCCGTTGACAAAT'
+T3 = 'GCGGGATCATTGCAATTATA'
 
 
-def plot_count_dist(counts, ticks=None):
+custom_rcParams = {
+    'legend.frameon': False
+}
+
+def apply_rcParams():
+    from matplotlib import rcParams
+    for k in custom_rcParams:
+        rcParams[k] = custom_rcParams[k]
+
+
+def plot_count_dist(counts, show_total=True, ticks=None):
 
     fig, ax0 = plt.subplots()
     ax1 = ax0.twinx()
@@ -44,7 +82,9 @@ def plot_count_dist(counts, ticks=None):
 
     cdf = np.cumsum(counts) / sum(counts)
     ax1.plot(np.log10(bins), cdf)
-    ax1.set_ylabel('cumulative fraction')
+    ax1.set_ylabel('Cumulative fraction')
+    ax0.set_ylabel('Number of barcodes')
+    ax0.set_xlabel('Read counts')
 
     ax0.stem(np.log10(bins), counts, markerfmt='.')
 
@@ -52,6 +92,11 @@ def plot_count_dist(counts, ticks=None):
     ax0.set_xticks([np.log10(x) for x in ticks])
     ax0.set_xticklabels(ticks);
 
+    # plt.tight_layout(h_pad=-100)
+
+    if show_total:
+        label = '{:,} barcodes detected'.format(int(counts.sum()))
+        ax0.text(0.32, 0.75, label, transform=ax0.transAxes, fontsize=16)
     return fig, ax0, ax1
 
 
@@ -60,12 +105,14 @@ def plot_D458_abundances(df_wide, df_info):
 
     for library in D458_examples:
         xs = df_wide[library].dropna().sort_values(ascending=False)
-        label = df_info.loc[library]['name']
+        # label = df_info.loc[library]['name']
+        label = df_info.loc[library]['sample_info']
         ax.plot(xs[1:200000].pipe(list), label=label)
     
     ax.set_yscale('log')
     ax.set_xscale('log')
-    ax.set_xlim([1e2, 1e6])    
+    # ax.set_xlim([1e2, 1e6]) 
+    ax.set_xlim([1e0, 1e6])    
     ax.legend(bbox_to_anchor=(1.07, 1.03))
     return fig
 
@@ -136,17 +183,27 @@ def PC9_cumulative_count(df_counts, df_counts_wide, ):
     return df_adj
 
 
-def plot_barcode_color(df_plt, hue_order, palette):
+def plot_barcode_color(df_plt, hue_order, palette, optimal_ordering=True):
     """Plot clustermap using `barcode_set` column to label rows.
     """
     assert df_plt['barcode_set'].pipe(set) == set(hue_order)
     get_color = lambda x: dict(zip(hue_order, palette)).get(x, 'white')
     colors = df_plt['barcode_set'].map(get_color)
     
-    return (df_plt
-     .drop(['barcode_set'], axis=1)
-     .pipe(sns.clustermap, row_colors=colors, row_cluster=True, col_cluster=False)
-     )
+    df_plt = df_plt.drop(['barcode_set'], axis=1) 
+
+    from scipy.cluster import hierarchy
+    row_linkage = hierarchy.linkage(df_plt, optimal_ordering=optimal_ordering)
+
+    return sns.clustermap(data=df_plt, 
+        #row_linkage=row_linkage,
+        cmap=plt.cm.RdBu_r,
+        row_cluster=False,
+        row_colors=colors,  
+        yticklabels=0,
+        xticklabels=0,
+        col_cluster=False)
+     
     
 
 def plot_stacked_replicates(df_wide, threshold, colors=None, reverse_legend=True):
@@ -177,7 +234,8 @@ def plot_stacked_replicates(df_wide, threshold, colors=None, reverse_legend=True
             )
     )
 
-    ax.set_ylabel('fraction of barcodes in sample')
+    ax.set_ylabel('Fraction of JQ1-enriched \nbarcodes in replicates')
+    ax.set_xlabel('JQ1 replicates')
     ax.set_xticklabels(ax.get_xticklabels(), rotation='horizontal')
     
     handles, labels = ax.get_legend_handles_labels()
@@ -186,3 +244,17 @@ def plot_stacked_replicates(df_wide, threshold, colors=None, reverse_legend=True
     ax.legend(handles, labels, bbox_to_anchor=(1, 0.85), frameon=False)
         
     return df_shared_reps, ax
+
+def log_scale_ticks(ax, axis='x'):
+    """Format x tick labels as exponents
+    """
+    if axis == 'x':
+        get_labels, set_labels = ax.get_xticks, ax.set_xticklabels
+    elif axis == 'y':
+        get_labels, set_labels = ax.get_yticks, ax.set_yticklabels
+    else:
+        raise ValueError
+    labels = get_labels()
+    format_exponent = lambda x: '{' + '{0:d}'.format(int(x)) + '}'
+    new_labels = ['$10^{0}$'.format(format_exponent(x)) for x in labels]
+    set_labels(new_labels)
