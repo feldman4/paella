@@ -52,17 +52,23 @@ def penalty_stop(s):
     penalty = sum(len(find_all(test, codon)) for codon in stop)
     return penalty
 
-def score(s, cut_site_offset=0):
+def score(s, activation_frame=1, cut_site_offset=0):
     """Count the number of 
     a) out-of-frame occurences of ATG in the sense strand, plus
-    b) occurences of stop codons in any frame after cut site.
+    b) occurences of stop codons in activation frame after cut site.
+
+    Automatically removes the first ATG and only analyzes subsequent 
+    sequence.
     """
     test = re.split('ATG', s.upper(), maxsplit=1)[1]
     penalty = len([x for x in find_all(test, 'ATG') if x % 3])
 
     for codon in stop:
+        # stop codon in the initial frame
         penalty += len([x for x in find_all(test, codon) if x % 3 == 0])
-        penalty += len([x for x in find_all(test[cut_site_offset:], codon)])
+        # stop codon in the final frame
+        penalty += len([x for x in find_all(test[cut_site_offset:], codon)
+                        if x % 3 == activation_frame])
     
     return penalty
 
