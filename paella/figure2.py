@@ -1,4 +1,3 @@
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
@@ -60,7 +59,11 @@ T3 = 'GCGGGATCATTGCAATTATA'
 
 
 custom_rcParams = {
-    'legend.frameon': False
+    'figure.figsize':(9, 8),
+    'legend.frameon': False,
+    'axes.labelsize' : 40,
+    'xtick.labelsize': 40,
+    'ytick.labelsize': 40,
 }
 
 def apply_rcParams():
@@ -197,7 +200,7 @@ def plot_barcode_color(df_plt, hue_order, palette, optimal_ordering=True):
 
     return sns.clustermap(data=df_plt, 
         #row_linkage=row_linkage,
-        cmap=plt.cm.RdBu_r,
+        cmap='RdBu_r',
         row_cluster=False,
         row_colors=colors,  
         yticklabels=0,
@@ -206,7 +209,7 @@ def plot_barcode_color(df_plt, hue_order, palette, optimal_ordering=True):
      
     
 
-def plot_stacked_replicates(df_wide, threshold, colors=None, reverse_legend=True):
+def plot_stacked_replicates(df_wide, threshold, colors=None, reverse_legend=False):
     df = (df_wide
       .pipe(lambda x: x>threshold)
       .assign(count=lambda x: x.sum(axis=1))
@@ -225,6 +228,8 @@ def plot_stacked_replicates(df_wide, threshold, colors=None, reverse_legend=True
     
     if colors is None:
         colors = sns.color_palette('Reds', df_wide.shape[1] - 1) + ['black']
+    
+
     ax = (df_shared_reps
      .pipe(lambda x: x / x.sum())
      [::-1] #reverse d
@@ -237,11 +242,18 @@ def plot_stacked_replicates(df_wide, threshold, colors=None, reverse_legend=True
     ax.set_ylabel('Fraction of JQ1-enriched \nbarcodes in replicates')
     ax.set_xlabel('JQ1 replicates')
     ax.set_xticklabels(ax.get_xticklabels(), rotation='horizontal')
+    # legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
+    #    ncol=2, mode="expand", borderaxespad=0.)
     
     handles, labels = ax.get_legend_handles_labels()
     if reverse_legend:
         handles, labels = handles[::-1], labels[::-1]
-    ax.legend(handles, labels, bbox_to_anchor=(1, 0.85), frameon=False)
+    ax.legend(handles, labels, bbox_to_anchor=(0.0, 1.02, 1.1, 0.102), 
+        frameon=False, 
+        loc=6, ncol=5, mode="expand", borderaxespad=0.1, fontsize=30)
+    # ax.legend(handles, labels, bbox_to_anchor=(-0.2, 1.02, 1.5, 0.102), 
+    #     frameon=False, 
+    #     loc=6, ncol=5, mode="expand", borderaxespad=0.009, fontsize=20)
         
     return df_shared_reps, ax
 
