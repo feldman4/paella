@@ -274,3 +274,18 @@ sort_order = \
  'PC9_1uM-4',
  'PC9_1uM-5',
 ]
+
+custom_rcParams = {
+    'figure.figsize':(11, 8),
+    'legend.frameon': False,
+    'axes.labelsize' : 40,
+    'xtick.labelsize': 40,
+    'ytick.labelsize': 40,
+    'axes.titlesize' : 40
+
+}
+
+def apply_rcParams():
+    from matplotlib import rcParams
+    for k in custom_rcParams:
+        rcParams[k] = custom_rcParams[k]
