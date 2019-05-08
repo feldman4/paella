@@ -134,3 +134,18 @@ def rename_MT_variables_for_plot(df):
          .assign(target=lambda x: x['target'].apply(target_names.get))
          # .assign(reporter=lambda x: x['reporter'].apply(reporter_names.get)) 
         )
+
+
+custom_rcParams = {
+    'figure.figsize':(11, 8),
+    'legend.frameon': False,
+    'axes.labelsize' : 40,
+    'xtick.labelsize': 40,
+    'ytick.labelsize': 40,
+    'axes.titlesize':40 
+                    }
+
+def apply_rcParams():
+    from matplotlib import rcParams
+    for k in custom_rcParams:
+        rcParams[k] = custom_rcParams[k]
