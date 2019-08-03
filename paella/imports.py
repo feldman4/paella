@@ -9,6 +9,7 @@ import os
 from glob import glob
 import functools
 from functools import partial
+import random
 
 import matplotlib.pyplot as plt
 import matplotlib
