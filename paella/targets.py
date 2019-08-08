@@ -62,15 +62,15 @@ def score(s, activation_frame=1, cut_site_offset=0):
     """
     test = re.split('ATG', s.upper(), maxsplit=1)[1]
     penalty = len([x for x in find_all(test, 'ATG') if x % 3])
-
+    # penalty=0
     for codon in stop:
         # stop codon in the initial frame
         penalty += len([x for x in find_all(test, codon) if x % 3 == 0])
         # stop codon in the final frame
         penalty += len([x for x in find_all(test[cut_site_offset:], codon)
                         if x % 3 == activation_frame])
-    
-    return penalty
+
+        return penalty
 
 def get_frames(s, code):
     if code == 'start':
@@ -195,3 +195,38 @@ def test_frames(sequence, translated_frames, stop_offset=0):
         stops = [(s + stop_offset) % 3 for s in stops]
         return not any((frame + start) % 3 in stops for frame in translated_frames)
 
+def test_in_frame_stop(seq):    
+    for codon in stop:
+        for x in find_all(seq, codon):
+            if x % 3 == 0:
+                return True
+    return False
+
+def test_out_of_frame_start(seq):    
+    for x in find_all(seq, 'ATG'):
+        if x % 3 != 0:
+            return True
+    return False
+
+def test_target(o_fwd, sgRNA):
+
+    after_kozak = o_fwd.upper().split('GCCACCATG')[1]
+    # has PAM
+    if sgRNA in after_kozak:
+        assert after_kozak.split(sgRNA)[1][1:3] == 'GG'
+    else:
+        assert after_kozak.split(rc(sgRNA))[0][-3:-1] == 'CC'
+
+    # mimic 1 bp deletion
+    if sgRNA in after_kozak:
+        cut_site = after_kozak.index(sgRNA) + 17
+    else:
+        cut_site = after_kozak.index(rc(sgRNA)) + 3
+        
+    with_deletion = (after_kozak[:cut_site] + 
+                     after_kozak[cut_site + 1:])
+
+    a = test_in_frame_stop(with_deletion)
+    b = test_in_frame_stop(after_kozak)
+    c = test_out_of_frame_start(after_kozak)
+    return not (a or b or c)
