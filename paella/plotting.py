@@ -163,7 +163,7 @@ def plot_correlation_hela(df, bottleneck):
     # more filtering...
     highest = df_plot.filter(regex='PC9').max(axis=1)
     filt = (df_plot['category'] == categories[0]) & (highest <= threshold)
-    print len(filt), filt.sum()
+    print (len(filt), filt.sum())
 
     float_cols = df_plot.filter(regex='HeLa').columns
     df_plot_ = df_plot[~filt].copy()

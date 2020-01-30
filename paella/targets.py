@@ -66,9 +66,9 @@ def score(s, activation_frame=1, cut_site_offset=0):
     for codon in stop:
         # stop codon in the initial frame
         penalty += len([x for x in find_all(test, codon) if x % 3 == 0])
-        # stop codon in the final frame
+        # stop codon in the final frame, 1 index before stop codon should not be 3%==-1  
         penalty += len([x for x in find_all(test[cut_site_offset:], codon)
-                        if x % 3 == activation_frame])
+                        if x % 3 == activation_frame]) 
 
         return penalty
 
@@ -208,6 +208,14 @@ def test_out_of_frame_start(seq):
             return True
     return False
 
+# def test_active_frame_stop(seq): 
+#     for codon in stop:
+#         x = find_all(seq, codon)
+#         for x in x: 
+#             if x % 3:
+#                 return True
+#     return False
+
 def test_target(o_fwd, sgRNA):
 
     after_kozak = o_fwd.upper().split('GCCACCATG')[1]
@@ -229,4 +237,6 @@ def test_target(o_fwd, sgRNA):
     a = test_in_frame_stop(with_deletion)
     b = test_in_frame_stop(after_kozak)
     c = test_out_of_frame_start(after_kozak)
+    # d = test_active_frame_stop(with_deletion)
     return not (a or b or c)
+    # return not (a or b or c or d)

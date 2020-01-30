@@ -22,6 +22,18 @@ D458_all_examples = {'DMSO-1': 'L32',
  'JQ1-4': 'L30',
  'JQ1-5': 'L31'}
 
+D458_all = {'DMSO-1': 'L32',
+ 'DMSO-2': 'L33',
+ 'DMSO-3': 'L34',
+ 'DMSO-4': 'L35',
+ 'DMSO-5': 'L36',
+ 'ETP': 'L26',
+ 'JQ1-1': 'L27',
+ 'JQ1-2': 'L28',
+ 'JQ1-3': 'L29',
+ 'JQ1-4': 'L30',
+ 'JQ1-5': 'L31'}
+
 #D458 26N
 D458_pre_freeza = ['L03']
 D458_post_freeze= ['L04']
