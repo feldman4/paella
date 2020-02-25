@@ -13,7 +13,7 @@ default_parts = {'sticky_5':  'AAAT',
          'sticky_3':  'GTAC',
          'PAM':       'cgg', # avoid start/stop codons
          'kozak_ATG': 'cgccaccatg',
-         'BsmBI_site': 'CGTCTCc',
+         'BsmBI_site': 'CGTCTC',
          'BsmBI_arm': 'tttcccggacgatc'
          }
 
@@ -27,10 +27,14 @@ def build_oligo(design, custom_parts=None):
 
     oligo = ''
     for element in design:
+        # print 'element', element
         if element.startswith('rc_'):
             oligo += rc(parts[element[3:]])
+            # print 'oligo',oligo
         else:
             oligo += parts[element]
+            # print 'oligo', oligo
+            # print 'parts', parts[element]
 
     return oligo
 
@@ -99,7 +103,7 @@ def get_targets(sg, spacer, translated_frames=(0, 1)):
 
         # antisense
         candidate = build_oligo(antisense, parts)
-        cut_site_offset = candidate.find(rc(sg + PAM)) + 6 # - 3
+        cut_site_offset = candidate.find(rc(sg + PAM)) + 6
         # if score(candidate, cut_site_offset) == 0:
             # only perfect score
         if test_frames(candidate, translated_frames, stop_offset=cut_site_offset):
@@ -121,8 +125,10 @@ def get_target_oligos(sgRNA, spacer):
 
 def get_candidate_positions(sgRNA):
     targets = get_targets(sgRNA, random_spacer[:3])
+    # print 'targets',targets
     candidates = []
     for target in targets:
+        # print 'target', target
         start = target.upper().find('ATG')
         end = target.find(sgRNA)
         if end == -1:
@@ -132,6 +138,7 @@ def get_candidate_positions(sgRNA):
             orientation = 'sense'
 
         offset = end - start - 3
+        # print 'offset',offset
         candidates.append((orientation, offset)) 
 
     return candidates
@@ -142,17 +149,22 @@ def get_multiplexed_target(sgRNAs, translated_frames=(0, 1), attempts=1e4):
     """
 
     positions = [get_candidate_positions(s) for s in sgRNAs]
+    
 
-    bonus_parts = {'spacer_%d' % i: 'ccc'[:i] for i in range(3)}
+    bonus_parts = {'spacer_%d' % i: 'ccc'[:i] for i in range(4)}
+  
     bonus_parts['random_spacer_front'] = random_spacer[:9]
     bonus_parts['random_spacer_back'] = random_spacer[-9:]
+    # print bonus_parts
 
     positions_ = [[choice(x) for x in positions] for _ in range(int(attempts))]
+    
     candidates = []
 
     for arr in positions_:
         target_arr = tuple()
         for sgRNA, (orientation, offset) in zip(sgRNAs, arr):
+            # print orientation
             bonus_parts['sgRNA_%s' % sgRNA] = sgRNA
             if orientation == 'sense': 
                 insert = 'sgRNA_%s' % sgRNA, 'PAM'
@@ -164,10 +176,13 @@ def get_multiplexed_target(sgRNAs, translated_frames=(0, 1), attempts=1e4):
 
         design = 'sticky_5', 'kozak_ATG', 'random_spacer_front'
         design += target_arr 
+        print 'target_arr',target_arr
         design += 'random_spacer_back', 'sticky_3'
         extra_offset = (26 * len(arr)) % 3
         bonus_parts['random_spacer_back'] = random_spacer[-9:-extra_offset]
         candidate = build_oligo(design, bonus_parts)
+        
+
         stops = get_frames(candidate, 'stop')
         if test_frames(candidate, translated_frames):
             candidates += [(score(candidate), candidate)]
@@ -178,16 +193,20 @@ def get_multiplexed_target(sgRNAs, translated_frames=(0, 1), attempts=1e4):
 def test_frames(sequence, translated_frames, stop_offset=0):
     sequence = sequence.upper()
     start = get_frames(sequence, 'start')
+    # print 'start', start
     
     if len(start) > 1:
         return False
     else:
         start = start[0]
+        # print 'start', start 
         # no stop codon in starting frame after ATG
         start_ix = sequence.find('ATG')
         stops = get_frames(sequence[start_ix:], 'stop')
         stops = [(s + start_ix) % 3 for s in stops]
+        # print 'stops', stops
         if start in stops:
+             # print 'stops', stops
             return False
 
         # no stop codon in other frames after stop offset
