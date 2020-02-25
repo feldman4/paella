@@ -224,11 +224,13 @@ def tag_to_coords(gate_tag):
     x = x['data-type:name']
     y = y['data-type:name']
     kdims = [x, y]
+
     return arr, kdims
 
 def coords_to_gate(xy, kdims):
     xs, ys = zip(*xy)
-    kdims = map(lambda x: x.replace('-', '_'), kdims)
+    kdims = list(map(lambda x: x.replace('-', '_'), kdims))
+
     
     return gates_from_xy(xs, ys, kdims)
 
@@ -248,7 +250,7 @@ def compress_below(x, cutoff, factor):
 
 def xml_to_pandas_gates(xml_file, transform=log_transform):
     gate_tags = extract_polygon_gates(xml_file)
-    coords = map(tag_to_coords, gate_tags)
+    coords = list(map(tag_to_coords, gate_tags))
     # print("=" * 80)
     # print("COO")
     # print(coords)

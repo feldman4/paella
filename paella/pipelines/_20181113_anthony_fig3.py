@@ -49,7 +49,7 @@ def load_flowjo_gates(xml_file, gate_names):
     flowjo_gates = {name: gate for name, gate in zip(gate_names, gates)}
 
     gate_tags = paella.flow.extract_polygon_gates(xml_file)
-    coords = map(paella.flow.tag_to_coords, gate_tags)
+    coords = list(map(paella.flow.tag_to_coords, gate_tags))
 
     xy_coords = {name: np.array(list(xy) + [xy[0]]) for name, (xy, _) in zip(gate_names, coords)}
 
